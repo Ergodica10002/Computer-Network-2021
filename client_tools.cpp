@@ -1,9 +1,30 @@
 #include "client_tools.h"
 
+void getIP(char* hostname, char* ip_addr){
+    struct addrinfo hints;
+    struct addrinfo *res, *tmp;
+    char host[256];
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;
+
+    int ret = getaddrinfo(hostname, NULL, &hints, &res);
+    if (ret != 0) {
+        fprintf(stderr, "[Error] getaddrinfo: %s\n", gai_strerror(ret));
+        exit(1);
+    }
+    tmp = res;
+    getnameinfo(tmp->ai_addr, tmp->ai_addrlen, host, sizeof(host), NULL, 0, NI_NUMERICHOST);
+    strcpy(ip_addr, host);
+    freeaddrinfo(res);
+
+    return;
+}
+
 void init_client(char* addr){
 	// Parse address
 	char* start = strtok(addr, ":");
-	strcpy(svr.ip_addr, start);
+	getIP(start, svr.ip_addr);
 	start = strtok(NULL, ":");
 	svr.port = atoi(start);
 	fprintf(stderr, "[Info] connect to host: %s port: %d\n", svr.ip_addr, svr.port);
