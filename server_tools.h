@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <string>
+#include <signal.h>
 
 #define BUFSIZE 65536
 #define USERNAME_LIMIT 64

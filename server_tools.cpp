@@ -47,6 +47,11 @@ void init_server(unsigned short port){
 	}
 	chdir("server_dir");
 
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+		fprintf(stderr, "[Error] Catch SIGPIPE error\n");
+		exit(1);
+	}
+
 	return;
 }
 
@@ -104,7 +109,8 @@ void ls(int connect_fd){
 		send(connect_fd, ERROR, strlen(ERROR), 0);
 		return;
 	}
-	char buf[BUFSIZE] = {'\0'};
+	char buf[BUFSIZE];
+	memset(buf, '\0', BUFSIZE);
 	off_t offset = 0;
 	while ((dirp = readdir(dp)) != NULL) {
 		if (strncmp(dirp->d_name, ".", 1) == 0){
