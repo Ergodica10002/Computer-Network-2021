@@ -51,8 +51,12 @@ void init_server(unsigned short port){
 }
 
 int read_request(request* rqst){
+	/* 
+		Empty rqst->buf first and read socket contents into rqst->buf
+	*/
 	memset(rqst->buf, '\0', BUFSIZE);
 	int ret = recv(rqst->connect_fd, rqst->buf, BUFSIZE, 0);
+	rqst->buf_len = ret;
 	return ret;
 }
 
@@ -67,6 +71,11 @@ void close_connect(request* rqst){
 }
 
 int check_username(char* buf){
+	/*
+		If username is not registered, return 0
+		If username is registered, return < -1
+		If username is out of length, return -2
+	*/ 
 	int len = strlen(buf);
 	if (len > USERNAME_LIMIT) {
 		fprintf(stderr, "[Error] Exceed username length limit\n");
@@ -84,11 +93,15 @@ int check_username(char* buf){
 }
 
 void ls(int connect_fd){
+	/*
+		After receive the command, find and respond all file names in one block
+	*/
 	fprintf(stderr, "[Info] receive request ls from fd %d\n", connect_fd);
 	DIR* dp = opendir(".");
 	struct dirent *dirp;
 	if (dp == NULL){
 		fprintf(stderr, "[Error] opendir error\n");
+		send(connect_fd, ERROR, strlen(ERROR), 0);
 		return;
 	}
 	char buf[BUFSIZE] = {'\0'};
@@ -114,14 +127,15 @@ off_t fsize(const char* filename) {
 	if (stat(filename, &st) == 0) {
 		return st.st_size;
 	}
-	fprintf(stderr, "[Error] file name %s\n", filename);
+	fprintf(stderr, "[Error] file size error: %s\n", filename);
 	return -1;
 }
 
 void get(request* rqst){
 	/* 
 		At the first request command, respond the file size or error message if not exist
-		Until all contents are delivered, client sends OK and server response further contents
+		Server delivers file contents blocks by blocks
+		Client responds OK for each block received
 	*/
 	char buf[BUFSIZE];
 	int file_fd;
@@ -178,8 +192,9 @@ void get(request* rqst){
 
 void put(request* rqst){
 	/* 
-		At the first request command, respond the file size or error message if not exist
-		Until all contents are delivered, client sends OK and server response further contents
+		At the first request command, receive the command type and file size
+		Client delivers file contents blocks by blocks
+		Server responds OK for each block received
 	*/
 	int file_fd;
 	int writenum;

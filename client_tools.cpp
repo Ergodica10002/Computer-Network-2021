@@ -53,25 +53,51 @@ void init_client(char* addr){
 }
 
 int read_response(char* read_buf) {
+	/* 
+		Empty read_buf first and read socket contents into read_buf
+	*/
 	memset(read_buf, '\0', BUFSIZE);
 	int ret = recv(svr.fd, read_buf, BUFSIZE, 0);
 	return ret;
 }
 
+int compare(const void *a, const void *b) {
+	return strcmp((char*)a, (char*)b);
+}
+
 void ls() {
-	char buf[BUFSIZE];
-	int readnum, file_num;
+	/*
+		Receive all file names in one block
+		Sort the names lexicographically and print
+	*/
+	char buf[BUFSIZE], filelist[1024][64];
+	int readnum, filenum;
 	send(svr.fd, "ls", 2, 0);
 	readnum = read_response(buf);
 	if (strncmp(buf, ERROR, strlen(ERROR)) == 0){
 		fprintf(stderr, "[Info] Empty directory\n");
 	} else {
-		printf("%s", buf);
+		char* start = strtok(buf, "\n");
+		filenum = 0;
+		while (start != NULL){
+			strcpy(filelist[filenum], start);
+			filenum += 1;
+			start = strtok(NULL, "\n");
+		}
+		qsort(filelist, filenum, sizeof(filelist[0]), compare);
+		for (int i = 0; i < filenum; i++){
+			printf("%s\n", filelist[i]);
+		}
 	}
 	return;
 }
 
 void get(char* filename) {
+	/* 
+		At the first request command, receive the file size or error message if not exist
+		Server delivers file contents blocks by blocks
+		Client responds OK for each block received
+	*/
 	char write_buf[BUFSIZE], read_buf[BUFSIZE];
 	int readnum, writenum;
 	off_t offset, filesize;
@@ -131,6 +157,11 @@ off_t fsize(const char* filename) {
 }
 
 void put(char* filename) {
+	/* 
+		At the first request command, send the file size and receive OK response
+		Client delivers file contents blocks by blocks
+		Server responds OK for each block received
+	*/
 	char write_buf[BUFSIZE], read_buf[BUFSIZE];
 	int readnum, writenum;
 	off_t offset, filesize;
@@ -138,6 +169,7 @@ void put(char* filename) {
 	int file_fd = open(filename, O_RDONLY);
 	if (file_fd < 0){
 		fprintf(stderr, "[Error] open error\n");
+		printf("The %s doesn't exist\n", filename);
 		return;
 	}
 	
@@ -168,6 +200,5 @@ void put(char* filename) {
 	}
 
 	printf("put %s successfully\n", filename);
-
 	close(file_fd);
 }
