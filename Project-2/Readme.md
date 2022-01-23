@@ -7,7 +7,10 @@ The chatting system supports usage by terminal or browser. They have a similar i
 
 [TOC]
 
+A demo video on Youtube is given: [CN2021 Project Phase2 Demo](https://www.youtube.com/watch?v=tzw7LjD0axY)
+
 ## Design
+
 In this system, three types of chatrooms are given. Users can choose the type when creating a room.
 1. `ONEBYONE`
 The room with `ONEBYONE` type is only visible to user that creator wants to talk to. The room's name should be set to that user, otherwise the creation will fail. The specified user should be one of the creater's friend. Also notice that the room will not be deleted or invisible even when the friendship ends afterwards. That is, we can only create a room for a friend, and we can still retrieve past history with someone who was ever our friend before.
